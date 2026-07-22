@@ -20,7 +20,7 @@ The [api-specs](./api-specs) folder contains OpenAPI specification files for the
 
 ## Read the Specs
 
-To read the specs, visit [dsdcapis.github.io/full-truckload/](https://dsdcapis.github.io/full-truckload/)
+To read the specs, visit [dsdcapis.github.io/Public-Test-FullTruckload/](https://dsdcapis.github.io/Public-Test-FullTruckload/)
 
 ## Participation
 
