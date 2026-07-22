@@ -1,0 +1,293 @@
+openapi: 3.1.0
+info:
+  title: In-Transit Visibility API
+  version: 1.0.0-public-preview
+  contact:
+    name: DSDC APIs Full Truckload
+    url: https://github.com/dsdcapis/full-truckload
+  license:
+    name: DSDC Repository License
+    url: https://github.com/dsdcapis/full-truckload/blob/main/LICENSE.md
+  description: |
+    # Overview
+    In-Transit Visibility is the capability to track freight movements through milestones, events and 
+    location updates in real time, from pickup to delivery. It is vital to the lifecycle of a load because
+    it provides insight into where a shipment is at each stage and alerts all parties of important
+    milestones or issues. This capability ties into the broader Digital Standards Development
+    Council open API standards initiative, which aims to digitize data exchange in freight
+    transportation. By adopting standard APIs, the industry can reduce manual processes, improve
+    data accuracy, increase visibility into shipments, enable real-time notifications of shipment
+    changes, and drive process automation.
+
+    Shippers today continue to demand real-time updates at every key milestone - before pickup,
+    during transit, and upon arrival. In response, industry leaders are making automated digital
+    tracking a core part of operations, replacing phone calls and emails with API-based status
+    sharing. This broad industry trend underscores how critical in-transit visibility has become. It
+    also reinforces the NMFTA's mission to standardize visibility.
+
+    By implementing this API, all parties - shippers, carriers, and intermediaries - share a single
+    source of truth about a load's status. In-transit updates, when combined with other NMFTA
+    standard APIs (e.g. electronic tendering and eBOL), form a continuous digital thread from load
+    creation to completion, greatly enhancing transparency and efficiency in freight movements.    
+    # Value Proposition
+
+    ## Shipper
+    
+    Gaining in-transit visibility allows shippers to easily get updates on the status and location of their shipments, reducing misunderstandings, human error, and theft. For example, instead of waiting for manual updates, a shipper can see when a load is picked up, in transit, or delayed, and even receive location updates before pickup occurs. This proactive insight gives shippers peace of mind and the ability to address exceptions quickly.
+
+    ## Carrier
+    
+    The In-Transit Visibility API allows carriers to provide digital status updates to relevant parties using a standard protocol. This approach enables tracking information to be shared with shippers and third-party logistics providers (3PLs), supporting automated communication of updates such as departure, arrival, or delay notifications, and contributing to operational transparency.
+    
+    ## 3rd Party
+    
+    The In-Transit Visibility API will allow third parties of all kinds to receive and send necessary shipment information to ensure a seamless flow through the life cycle of a shipment. Due to the nature of their business and having to interact with multiple parties in the transportation industry, they stand much to gain by simplification of their business processes, which the In-Transit Visibility specification will enable. Overall, the In-Transit Visibility standard helps 3rd parties coordinate more effectively and provide better service with less overhead.
+
+    # Capabilities:
+
+    - Pull events: GET /v1/events (page-based, deterministic ordering)
+    - Webhook delivery: webhooks/shipmentEvents (EventBatch + HMAC)
+    - Subscription management: /v1/subscriptions
+    - Pagination strategy: Page-Based method with page/pageSize
+    - Standardized event types
+    - Ordering, idempotency, retries
+    - [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807)
+
+    # Product Requirements Document (PRD)
+
+    The Product Requirements Document (PRD) for this API can be found [here](https://dsdcapis.github.io/full-truckload/api-prds/API%20Product%20Requirements%20-%20In%20Transit%20Visibility.pdf).
+tags:
+  - name: Events
+    description: Pull shipment events
+  - name: Subscriptions
+    description: Manage webhook subscriptions
+
+paths:
+  /v1/events:
+    get:
+      tags: 
+        - Events
+      summary: List shipment events (page-based)
+      operationId: listEvents
+      description: |
+        Returns a page of events. Pagination in headers; body uses EventsPage for consistency.
+        Results are deterministically ordered by `shipmentId`, `sequence`, `id`.      
+      parameters:
+        - in: query
+          name: shipmentId
+          schema: 
+            type: string
+          description: Filter by canonical shipment id.
+        - in: query
+          name: eventTypes
+          schema:
+            type: array
+            items: 
+              $ref: './schemas/schemas.yaml#/components/schemas/EventType'
+          description: One or more event types.
+        - in: query
+          name: occurredFrom
+          schema: 
+            type: string
+            format: date-time
+          description: occurredAt >= this timestamp.
+        - in: query
+          name: occurredTo
+          schema: 
+            type: string
+            format: date-time
+          description: occurredAt < this timestamp.
+        - in: query
+          name: page
+          schema: 
+            type: integer
+            minimum: 1
+            default: 1
+          description: 1-based page index.
+        - in: query
+          name: pageSize
+          schema: 
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          description: Results per page.
+        - in: query
+          name: order
+          schema: 
+            type: string
+            enum:
+               - asc
+               - desc
+            default: asc
+          description: Sort direction on `shipmentId`, `sequence`, `id`.
+      responses:
+        '200':
+          description: A page of events
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/schemas.yaml#/components/schemas/EventsPage'
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+  /v1/subscriptions:
+    get:
+      tags: 
+        - Subscriptions
+      summary: List subscriptions
+      operationId: listSubscriptions
+      description: |
+        Returns a page of subscriptions. Pagination in headers; body uses SubscriptionsPage for consistency.
+        Results are deterministically ordered by `id`.      
+      parameters:
+        - in: query
+          name: status
+          schema: 
+            type: string
+            enum: 
+              - active
+              - paused
+              - inactive
+            default: active
+        - in: query
+          name: page
+          schema: 
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema: 
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Subscriptions page
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionsPage'
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+    post:
+      tags: 
+        - Subscriptions
+      summary: Create a subscription
+      operationId: createSubscription
+      description: |
+        Create a subscription to receive in-transit events via webhook. 
+        Provide the delivery configuration webhook url and hmac_secret_id  and filters event_types and shipment IDs. 
+        Returns the created Subscription on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionCreate'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              $ref: './schemas/schemas.yaml#/components/headers/Location'
+          content:
+            application/json:
+              schema: 
+                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+  /v1/subscriptions/{subscriptionId}:
+    get:
+      tags: 
+        - Subscriptions
+      summary: Get a subscription
+      operationId: getSubscription
+      description: |
+        Retrieve a single subscription by its unique ID.
+        Returns the subscription's current configuration and status.
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          schema: 
+            type: string
+      responses:
+        '200':
+          description: The subscription that matches the provided subscription ID.
+          content:
+            application/json:
+              schema: 
+                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+    patch:
+      tags: 
+        - Subscriptions
+      summary: Update a subscription (merge-patch)
+      operationId: updateSubscription
+      description: Partial update using [JSON Merge Patch](https://datatracker.ietf.org/doc/html/rfc7386). Provide only fields you want to change.      
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          schema: 
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionPatch'
+      responses:
+        '200':
+          description: Updated subscription
+          content:
+            application/json:
+              schema: 
+                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+    delete:
+      tags: 
+        - Subscriptions
+      summary: Delete a subscription
+      operationId: deleteSubscription
+      description: Delete a subscription by its unique ID. Stops future deliveries and removes the subscription.
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          schema: 
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+
+webhooks:
+  shipmentEvents:
+    post:
+      summary: Shipment events webhook (from Carrier -> Subscriber)
+      description: |
+        We POST batches of events to your configured `endpointUrl`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: './schemas/schemas.yaml#/components/schemas/EventBatch'
+      responses:
+        '200': 
+          description: Acknowledged (no retry)
+        '202': 
+          description: Accepted (no retry)
+        'default': 
+          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
