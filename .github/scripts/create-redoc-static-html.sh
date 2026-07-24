@@ -34,6 +34,13 @@ loadStaticHtmlToFolder() {
 
     echo "Building docs: \"$currentFolder/$folder/openapi.yaml\""
     npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="openapi-combined.yaml" --theme.openapi.hideDownloadButton=true
+
+    echo "Adding back-to-downloads button: \"$publicFolder/$folder/index.html\""
+    IFS='/' read -ra folderParts <<< "$folder"
+    local backPath=""
+    for ((i=0; i<${#folderParts[@]}; i++)); do backPath="../$backPath"; done
+    local backButton="<a href=\"${backPath}index.html\" style=\"position:fixed;bottom:16px;left:16px;z-index:1000;background-color:#592E82;color:#ffffff;padding:10px 20px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:13px;text-decoration:none;box-shadow:0px 2px 8px rgba(0,0,0,0.3);\">← Back to Downloads</a>"
+    sed -i "s|</body>|${backButton}\n</body>|" "$publicFolder/$folder/index.html"
 }
 
 generateHighLevelIndex() {
