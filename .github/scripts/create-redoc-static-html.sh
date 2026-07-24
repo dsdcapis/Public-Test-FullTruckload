@@ -39,8 +39,43 @@ loadStaticHtmlToFolder() {
     IFS='/' read -ra folderParts <<< "$folder"
     local backPath=""
     for ((i=0; i<${#folderParts[@]}; i++)); do backPath="../$backPath"; done
-    local backButton="<a href=\"${backPath}index.html\" style=\"position:fixed;bottom:16px;left:16px;z-index:1000;background-color:#592E82;color:#ffffff;padding:10px 20px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:13px;text-decoration:none;box-shadow:0px 2px 8px rgba(0,0,0,0.3);\">← Back to Downloads</a>"
-    sed -i "s|</body>|${backButton}\n</body>|" "$publicFolder/$folder/index.html"
+    local backHref="${backPath}index.html"
+
+    cat >> "$publicFolder/$folder/index.html" << EOF
+<script>
+(function() {
+    var backHref = "$backHref";
+    var tries = 0;
+    var iv = setInterval(function() {
+        tries++;
+        var redocEl = document.getElementById('redoc');
+        var h1 = redocEl ? redocEl.querySelector('h1') : null;
+        var titleBlock = h1 ? h1.parentElement : null;
+        if (titleBlock && titleBlock.parentElement) {
+            var wrap = document.createElement('div');
+            wrap.style.padding = '16px 40px';
+            var link = document.createElement('a');
+            link.href = backHref;
+            link.textContent = String.fromCharCode(8592) + ' Back to Downloads';
+            link.style.display = 'inline-block';
+            link.style.backgroundColor = '#592E82';
+            link.style.color = '#ffffff';
+            link.style.padding = '14px 28px';
+            link.style.fontFamily = 'Arial, Helvetica, sans-serif';
+            link.style.fontWeight = 'bold';
+            link.style.fontSize = '16px';
+            link.style.textDecoration = 'none';
+            link.style.boxShadow = '0px 2px 8px rgba(0,0,0,0.3)';
+            wrap.appendChild(link);
+            titleBlock.parentElement.insertBefore(wrap, titleBlock.nextSibling);
+            clearInterval(iv);
+            return;
+        }
+        if (tries > 50) { clearInterval(iv); }
+    }, 100);
+})();
+</script>
+EOF
 }
 
 generateHighLevelIndex() {
