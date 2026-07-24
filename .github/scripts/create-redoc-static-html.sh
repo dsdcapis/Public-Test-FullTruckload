@@ -33,7 +33,7 @@ loadStaticHtmlToFolder() {
     npx @redocly/cli@latest bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/openapi-combined.yaml" --ext yaml
 
     echo "Building docs: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="openapi-combined.yaml"
+    npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="openapi-combined.yaml" --theme.openapi.hideDownloadButton=true
 }
 
 generateHighLevelIndex() {
