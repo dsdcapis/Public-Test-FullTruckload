@@ -162,10 +162,12 @@ generateHighLevelIndex() {
         }
         .files-caption {
             font-family: 'Nunito Sans', Arial, sans-serif;
-            color: #B4B4B4;
-            font-size: 13px;
-            margin: 0 0 16px 0;
-            padding-bottom: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 18px;
+            line-height: 1.5;
+            margin: 0 0 20px 0;
+            padding-bottom: 14px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
