@@ -6,21 +6,22 @@ publicFolder="$currentFolder/public"
 
 findAllFiles() {
     local -n resultRef=$1
+    local excludeArgs=(-not -path "$currentFolder/api-prds/*" -not -path "$currentFolder/api-scopes/*")
 
     while IFS= read -r -d '' dir; do
         rel_dir="${dir#$currentFolder/}"
         resultRef["$rel_dir"]="openapi"
-    done < <(find "$currentFolder" -type f -name "openapi.yaml" -print0 | xargs -0 -n1 dirname -z | sort -zu)
+    done < <(find "$currentFolder" -type f -name "openapi.yaml" "${excludeArgs[@]}" -print0 | xargs -0 -n1 dirname -z | sort -zu)
 
     while IFS= read -r -d '' file; do
         rel_file="${file#$currentFolder/}"
         resultRef["$rel_file"]="pdf"
-    done < <(find "$currentFolder" -type f -name "*.pdf" -print0 | sort -z)
+    done < <(find "$currentFolder" -type f -name "*.pdf" "${excludeArgs[@]}" -print0 | sort -z)
 
     while IFS= read -r -d '' file; do
         rel_file="${file#$currentFolder/}"
         resultRef["$rel_file"]="xlsx"
-    done < <(find "$currentFolder" -type f -name "*.xlsx" -print0 | sort -z)
+    done < <(find "$currentFolder" -type f -name "*.xlsx" "${excludeArgs[@]}" -print0 | sort -z)
 }
 
 loadStaticHtmlToFolder() {
