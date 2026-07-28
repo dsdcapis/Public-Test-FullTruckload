@@ -157,6 +157,12 @@ generateHighLevelIndex() {
             font-weight: 600;
             color: #ffffff;
             font-size: 18px;
+            margin: 0 0 4px 0;
+        }
+        .files-caption {
+            font-family: 'Nunito Sans', Arial, sans-serif;
+            color: #B4B4B4;
+            font-size: 13px;
             margin: 0 0 16px 0;
             padding-bottom: 10px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -206,7 +212,20 @@ generateHighLevelIndex() {
         .xlsx-link { color: #5cb85c; }
         .xlsx-link::before { content: '📊 '; margin-right: 4px; }
         .openapi-link { color: #5bc0de; }
-        .openapi-link::before { content: '📋 '; margin-right: 4px; }
+        .openapi-link::before { content: '👁 '; margin-right: 4px; }
+        .quick-download-link {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 10px;
+            font-size: 12px;
+            font-family: 'Nunito Sans', Arial, sans-serif;
+            font-weight: 700;
+            color: #ffffff;
+            background-color: #592E82;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .quick-download-link:hover { background-color: #3A1D57; }
 
         .toggle {
             display: inline-block;
@@ -390,6 +409,7 @@ generateHighLevelIndex() {
         <h1>FTL API Documentation - Test</h1>
         <p class="intro">Supported by the Digital Standards Development Council<sup>&reg;</sup> (DSDC)<sup>&reg;</sup>'s Digital FTL Council, these API standards help organizations modernize FTL workflows through standardized, open, and scalable integration.</p>
         <p class="files-heading">Available Files</p>
+        <p class="files-caption">Click a spec name to preview it in your browser, or use its Download button to save the file directly. Check box(es) and use "Download Selected" to grab multiple files at once.</p>
         <ul class="tree" id="root">
 ENDHEAD
 
@@ -488,7 +508,7 @@ ENDHEAD
                 if [[ -f "$publicFolder/$item/index.html" ]]; then
                     IFS='/' read -ra parts <<< "$item"
                     local fileName="${parts[-1]}"
-                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${item}/openapi-combined.yaml\" data-name=\"${item}/openapi-combined.yaml\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$item/index.html\">$fileName (OpenAPI)</a></li>" >> "$indexFile"
+                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${item}/openapi-combined.yaml\" data-name=\"${item}/openapi-combined.yaml\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$item/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${item}/openapi-combined.yaml\" aria-label=\"Download $fileName\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
                 fi
 
             elif [[ "$nodeType" == "pdf" ]]; then
