@@ -24,17 +24,28 @@ findAllFiles() {
     done < <(find "$currentFolder" -type f -name "*.xlsx" "${excludeArgs[@]}" -print0 | sort -z)
 }
 
+# Every spec source file is named openapi.yaml, so derive a unique, readable download
+# name from its folder instead (e.g. api-specs/book-tender/v1.0-public-preview ->
+# ftl-book-tender-v1.0-public-preview.yaml). This name is what gets reported to
+# HubSpot in the dsdc_apis_downloaded field, so it must identify the standard.
+combinedFileName() {
+    local folder="${1#api-specs/}"
+    printf 'ftl-%s.yaml' "${folder//\//-}"
+}
+
 loadStaticHtmlToFolder() {
     local folder="$1"
+    local combinedFile
+    combinedFile="$(combinedFileName "$folder")"
 
     echo "Creating folder \"$publicFolder/$folder\""
     mkdir -p "$publicFolder/$folder"
 
-    echo "Bundling OpenAPI spec: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@latest bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/openapi-combined.yaml" --ext yaml
+    echo "Bundling OpenAPI spec: \"$currentFolder/$folder/openapi.yaml\" -> \"$combinedFile\""
+    npx @redocly/cli@latest bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/$combinedFile" --ext yaml
 
     echo "Building docs: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="openapi-combined.yaml" --theme.openapi.hideDownloadButtons=true
+    npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="$combinedFile" --theme.openapi.hideDownloadButtons=true
 
     echo "Adding back-to-downloads button: \"$publicFolder/$folder/index.html\""
     IFS='/' read -ra folderParts <<< "$folder"
@@ -522,7 +533,9 @@ ENDHEAD
                 if [[ -f "$publicFolder/$item/index.html" ]]; then
                     IFS='/' read -ra parts <<< "$item"
                     local fileName="${parts[-1]}"
-                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${item}/openapi-combined.yaml\" data-name=\"${item}/openapi-combined.yaml\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$item/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${item}/openapi-combined.yaml\" aria-label=\"Download $fileName\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
+                    local combinedFile
+                    combinedFile="$(combinedFileName "$item")"
+                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${item}/${combinedFile}\" data-name=\"${item}/${combinedFile}\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$item/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${item}/${combinedFile}\" aria-label=\"Download ${combinedFile}\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
                 fi
 
             elif [[ "$nodeType" == "pdf" ]]; then
@@ -593,17 +606,8 @@ ENDHEAD
             if (selectedFiles.length === 0) return;
             var filesToDownload = selectedFiles.slice();
 
-            if (localStorage.getItem('dsdc_signed_up') === '1') {
-                downloadAsZip(filesToDownload).catch(function(err) {
-                    showToast('Download failed: ' + err.message);
-                });
-                document.querySelectorAll('.download-checkbox:checked').forEach(function(cb) {
-                    cb.checked = false;
-                });
-                updateSelection();
-                return;
-            }
-
+            // The HubSpot form is shown for every download (no "already signed up" skip)
+            // so that each download is reported with the standards that were selected.
             if (typeof hbspt === 'undefined') {
                 showToast('Form is loading, please try again in a moment.');
                 return;
@@ -626,12 +630,17 @@ ENDHEAD
                 region: 'na1',
                 target: '#hubspot-form-container',
                 onFormReady: function($form) {
-                    $form.find('input[name="dsdc_apis_downloaded"]')
-                        .val(fileList)
-                        .change();
+                    // HubSpot passes a jQuery object only when jQuery is on the page;
+                    // otherwise it is a plain form element. Handle both.
+                    var formEl = ($form && $form.jquery) ? $form[0] : $form;
+                    var field = formEl && formEl.querySelector('input[name="dsdc_apis_downloaded"]');
+                    if (field) {
+                        field.value = fileList;
+                        field.dispatchEvent(new Event('input', { bubbles: true }));
+                        field.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 },
                 onFormSubmitted: function() {
-                    localStorage.setItem('dsdc_signed_up', '1');
                     closeDownloadModal();
                     downloadAsZip(filesToDownload).catch(function(err) {
                         showToast('Download failed: ' + err.message);
@@ -653,6 +662,13 @@ ENDHEAD
         function closeDownloadModal() {
             document.getElementById('download-modal').style.display = 'none';
             if (_modalTrigger) { _modalTrigger.focus(); _modalTrigger = null; }
+            cleanDownloadUrl();
+        }
+
+        function cleanDownloadUrl() {
+            var cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('dsdc_apis_downloaded');
+            window.history.replaceState({}, '', cleanUrl);
         }
 
         async function downloadAsZip(files) {
@@ -674,10 +690,7 @@ ENDHEAD
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            var cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('dsdc_apis_downloaded');
-            window.history.replaceState({}, '', cleanUrl);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
             showToast();
         }
 
