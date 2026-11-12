@@ -4,10 +4,10 @@ info:
   version: "1.0.0-public-preview"
   contact:
     name: DSDC APIs Rate Quote Full Truckload
-    url: https://github.com/dsdcapis/rate-quote-full-truckload
+    url: https://github.com/dsdcapis/full-truckload
   license:
     name: DSDC Repository License
-    url: https://github.com/dsdcapis/rate-quote-full-truckload/blob/main/LICENSE.md
+    url: https://github.com/dsdcapis/full-truckload/blob/main/LICENSE.md
   description: |
     # Overview
 
