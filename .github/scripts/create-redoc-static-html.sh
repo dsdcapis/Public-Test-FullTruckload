@@ -6,35 +6,56 @@ publicFolder="$currentFolder/public"
 
 findAllFiles() {
     local -n resultRef=$1
-    local excludeArgs=(-not -path "$currentFolder/api-prds/*" -not -path "$currentFolder/api-scopes/*")
 
     while IFS= read -r -d '' dir; do
         rel_dir="${dir#$currentFolder/}"
         resultRef["$rel_dir"]="openapi"
-    done < <(find "$currentFolder" -type f -name "openapi.yaml" "${excludeArgs[@]}" -print0 | xargs -0 -n1 dirname -z | sort -zu)
+    done < <(find "$currentFolder" -type f -name "openapi.yaml" -print0 | xargs -0 -n1 dirname -z | sort -zu)
 
     while IFS= read -r -d '' file; do
         rel_file="${file#$currentFolder/}"
         resultRef["$rel_file"]="pdf"
-    done < <(find "$currentFolder" -type f -name "*.pdf" "${excludeArgs[@]}" -print0 | sort -z)
+    done < <(find "$currentFolder" -type f -name "*.pdf" -print0 | sort -z)
 
     while IFS= read -r -d '' file; do
         rel_file="${file#$currentFolder/}"
         resultRef["$rel_file"]="xlsx"
-    done < <(find "$currentFolder" -type f -name "*.xlsx" "${excludeArgs[@]}" -print0 | sort -z)
+    done < <(find "$currentFolder" -type f -name "*.xlsx" -print0 | sort -z)
+}
+
+# Every spec source file is named openapi.yaml, so derive a unique, readable download
+# name from its folder instead (e.g. api-specs/book-tender/v1.0-public-preview ->
+# ftl-book-tender-v1.0-public-preview.yaml). This name is what gets reported to
+# HubSpot in the dsdc_apis_downloaded field, so it must identify the standard.
+combinedFileName() {
+    local folder="${1#api-specs/}"
+    printf 'ftl-%s.yaml' "${folder//\//-}"
+}
+
+# Escape a value for safe use in HTML text and attribute values.
+htmlEscape() {
+    local s="$1"
+    s="${s//&/&amp;}"
+    s="${s//</&lt;}"
+    s="${s//>/&gt;}"
+    s="${s//\"/&quot;}"
+    s="${s//\'/&#x27;}"
+    printf '%s' "$s"
 }
 
 loadStaticHtmlToFolder() {
     local folder="$1"
+    local combinedFile
+    combinedFile="$(combinedFileName "$folder")"
 
     echo "Creating folder \"$publicFolder/$folder\""
     mkdir -p "$publicFolder/$folder"
 
-    echo "Bundling OpenAPI spec: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@latest bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/openapi-combined.yaml" --ext yaml
+    echo "Bundling OpenAPI spec: \"$currentFolder/$folder/openapi.yaml\" -> \"$combinedFile\""
+    npx @redocly/cli@1 bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/$combinedFile" --ext yaml
 
     echo "Building docs: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@latest build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="openapi-combined.yaml" --theme.openapi.hideDownloadButtons=true
+    npx @redocly/cli@1 build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="$combinedFile" --theme.openapi.hideDownloadButtons=true
 
     echo "Adding back-to-downloads button: \"$publicFolder/$folder/index.html\""
     IFS='/' read -ra folderParts <<< "$folder"
@@ -104,7 +125,7 @@ generateHighLevelIndex() {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous"></script>
-    <script charset="utf-8" type="text/javascript" src="https://js.hsforms.net/forms/embed/v2.js"></script>
+    <script charset="utf-8" type="text/javascript" src="https://js.hsforms.net/forms/embed/v2.js" onerror="window._hsFormsBlocked = true;"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -506,7 +527,7 @@ ENDHEAD
 
             if [[ "$nodeType" == "folder" ]]; then
                 IFS='/' read -ra parts <<< "$item"
-                local folderName="${parts[-1]}"
+                local folderName; folderName="$(htmlEscape "${parts[-1]}")"
 
                 echo "${indent}<li>" >> "$indexFile"
                 echo "${indent}    <span class=\"toggle\" onclick=\"toggleFolder(this)\">▼</span>" >> "$indexFile"
@@ -521,19 +542,23 @@ ENDHEAD
             elif [[ "$nodeType" == "openapi" ]]; then
                 if [[ -f "$publicFolder/$item/index.html" ]]; then
                     IFS='/' read -ra parts <<< "$item"
-                    local fileName="${parts[-1]}"
-                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${item}/openapi-combined.yaml\" data-name=\"${item}/openapi-combined.yaml\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$item/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${item}/openapi-combined.yaml\" aria-label=\"Download $fileName\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
+                    local fileName; fileName="$(htmlEscape "${parts[-1]}")"
+                    local escapedItem; escapedItem="$(htmlEscape "$item")"
+                    local combinedFile; combinedFile="$(htmlEscape "$(combinedFileName "$item")")"
+                    echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${escapedItem}/${combinedFile}\" data-name=\"${escapedItem}/${combinedFile}\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$escapedItem/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${escapedItem}/${combinedFile}\" aria-label=\"Download ${combinedFile}\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
                 fi
 
             elif [[ "$nodeType" == "pdf" ]]; then
                 IFS='/' read -ra parts <<< "$item"
-                local fileName="${parts[-1]}"
-                echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName for download\" data-file=\"$item\" data-name=\"$item\" onchange=\"updateSelection()\"><a class=\"file-link pdf-link\" href=\"$item\" onclick=\"handleDownloadClick(event); return false;\">$fileName</a></li>" >> "$indexFile"
+                local fileName; fileName="$(htmlEscape "${parts[-1]}")"
+                local escapedItem; escapedItem="$(htmlEscape "$item")"
+                echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName for download\" data-file=\"$escapedItem\" data-name=\"$escapedItem\" onchange=\"updateSelection()\"><a class=\"file-link pdf-link\" href=\"$escapedItem\" onclick=\"handleDownloadClick(event); return false;\">$fileName</a></li>" >> "$indexFile"
 
             elif [[ "$nodeType" == "xlsx" ]]; then
                 IFS='/' read -ra parts <<< "$item"
-                local fileName="${parts[-1]}"
-                echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName for download\" data-file=\"$item\" data-name=\"$item\" onchange=\"updateSelection()\"><a class=\"file-link xlsx-link\" href=\"$item\" onclick=\"handleDownloadClick(event); return false;\">$fileName</a></li>" >> "$indexFile"
+                local fileName; fileName="$(htmlEscape "${parts[-1]}")"
+                local escapedItem; escapedItem="$(htmlEscape "$item")"
+                echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName for download\" data-file=\"$escapedItem\" data-name=\"$escapedItem\" onchange=\"updateSelection()\"><a class=\"file-link xlsx-link\" href=\"$escapedItem\" onclick=\"handleDownloadClick(event); return false;\">$fileName</a></li>" >> "$indexFile"
             fi
         done
     }
@@ -568,6 +593,7 @@ ENDHEAD
     <script>
         var selectedFiles = [];
         var _modalTrigger = null;
+        var _formAttempt = 0;
 
         function updateSelection() {
             selectedFiles = [];
@@ -593,19 +619,17 @@ ENDHEAD
             if (selectedFiles.length === 0) return;
             var filesToDownload = selectedFiles.slice();
 
-            if (localStorage.getItem('dsdc_signed_up') === '1') {
-                downloadAsZip(filesToDownload).catch(function(err) {
-                    showToast('Download failed: ' + err.message);
-                });
-                document.querySelectorAll('.download-checkbox:checked').forEach(function(cb) {
-                    cb.checked = false;
-                });
-                updateSelection();
-                return;
-            }
-
+            // The HubSpot form is shown for every download (no "already signed up" skip)
+            // so that each download is reported with the standards that were selected.
             if (typeof hbspt === 'undefined') {
-                showToast('Form is loading, please try again in a moment.');
+                // If the HubSpot script failed to load (or the page finished loading
+                // without it), it is almost always an ad/privacy blocker. Say so,
+                // instead of asking the visitor to retry forever.
+                if (window._hsFormsBlocked || document.readyState === 'complete') {
+                    showFormBlockedMessage();
+                } else {
+                    showToast('Form is loading, please try again in a moment.');
+                }
                 return;
             }
 
@@ -620,18 +644,34 @@ ENDHEAD
             var container = document.getElementById('hubspot-form-container');
             container.innerHTML = '';
 
+            // The embed script can load while the form itself is blocked; if the form
+            // has not rendered after 10 seconds, show the blocker message instead.
+            var formReady = false;
+            var attempt = ++_formAttempt;
+            setTimeout(function() {
+                if (!formReady && attempt === _formAttempt && document.getElementById('download-modal').style.display === 'flex') {
+                    showFormBlockedMessage();
+                }
+            }, 10000);
+
             hbspt.forms.create({
                 portalId: '22203423',
                 formId: '3171c162-f7a0-4402-ac25-d1b769031b6e',
                 region: 'na1',
                 target: '#hubspot-form-container',
                 onFormReady: function($form) {
-                    $form.find('input[name="dsdc_apis_downloaded"]')
-                        .val(fileList)
-                        .change();
+                    formReady = true;
+                    // HubSpot passes a jQuery object only when jQuery is on the page;
+                    // otherwise it is a plain form element. Handle both.
+                    var formEl = ($form && $form.jquery) ? $form[0] : $form;
+                    var field = formEl && formEl.querySelector('input[name="dsdc_apis_downloaded"]');
+                    if (field) {
+                        field.value = fileList;
+                        field.dispatchEvent(new Event('input', { bubbles: true }));
+                        field.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 },
                 onFormSubmitted: function() {
-                    localStorage.setItem('dsdc_signed_up', '1');
                     closeDownloadModal();
                     downloadAsZip(filesToDownload).catch(function(err) {
                         showToast('Download failed: ' + err.message);
@@ -643,16 +683,36 @@ ENDHEAD
                 }
             });
 
+            showDownloadModal();
+        }
+
+        function showDownloadModal() {
             var _modal = document.getElementById('download-modal');
-            _modal.style.display = 'flex';
-            _modalTrigger = document.activeElement;
+            if (_modal.style.display !== 'flex') {
+                _modal.style.display = 'flex';
+                _modalTrigger = document.activeElement;
+            }
             var firstFocusable = _modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
             if (firstFocusable) firstFocusable.focus();
+        }
+
+        function showFormBlockedMessage() {
+            var container = document.getElementById('hubspot-form-container');
+            container.innerHTML = '<p>The download form could not be loaded. This is usually caused by an ad blocker or browser privacy setting.</p>' +
+                '<p>Please allow <strong>hsforms.net</strong> and <strong>hsforms.com</strong> for this site (or turn off the blocker), then reload the page and try again.</p>';
+            showDownloadModal();
         }
 
         function closeDownloadModal() {
             document.getElementById('download-modal').style.display = 'none';
             if (_modalTrigger) { _modalTrigger.focus(); _modalTrigger = null; }
+            cleanDownloadUrl();
+        }
+
+        function cleanDownloadUrl() {
+            var cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('dsdc_apis_downloaded');
+            window.history.replaceState({}, '', cleanUrl);
         }
 
         async function downloadAsZip(files) {
@@ -674,10 +734,7 @@ ENDHEAD
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            var cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('dsdc_apis_downloaded');
-            window.history.replaceState({}, '', cleanUrl);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
             showToast();
         }
 
