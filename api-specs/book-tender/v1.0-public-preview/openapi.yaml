@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Tender API
+  version: "1.0.0-public-preview"
+  contact:
+    name: DSDC APIs Book Tender Full Truckload
+    url: https://github.com/dsdcapis/full-truckload
+  license:
+    name: DSDC Repository License
+    url: https://github.com/dsdcapis/full-truckload/blob/main/LICENSE.md
+  description: |
+    # Overview
+
+    The Book Tender API provides a standard way to tender Full Truckload (FTL)
+    shipments to carriers. It enables shippers, carriers, and third parties to
+    offer, accept, update, and cancel truckload tenders in a consistent,
+    digitized format, replacing manual processes such as phone calls, faxes,
+    and emails and reducing the time it takes to secure carrier capacity.
+
+    # Value Proposition
+
+    ## Shipper
+
+    Shippers can tender a load to a carrier using a single standardized
+    request, and can update or cancel that tender as needed, reducing the
+    manual effort of phone calls, faxes, and emails traditionally used to
+    secure carrier capacity.
+
+    ## Carrier
+
+    Carriers can receive tender offers in a standard format, simplifying
+    connectivity with a large number of shippers and third parties while
+    reducing onboarding costs and the manual effort required to accept,
+    update, or cancel tenders.
+
+    ## 3rd Party
+
+    Third parties such as brokers and 3PLs can embed the Book Tender API into
+    their platforms to tender loads to carriers programmatically on behalf of
+    shippers, enabling automated capacity sourcing and faster tender
+    turnaround.
+
+    # Product Requirements Document (PRD)
+
+    The Product Requirements Document (PRD) for this API can be found [here](https://dsdcapis.github.io/full-truckload/api-prds/API%20Product%20Requirements%20-%20Book%20Tender.pdf).
+tags:
+  - name: Book Tender API Standards
+    description: Standards for the FTL Book Tender API
+paths:
+  /v1/tender/app:
+    post:
+      tags:
+        - Book Tender API Standards
+      summary: Create a tender
+      operationId: createTender
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/schemas.yaml#/components/schemas/TenderCreateRequest'
+      responses:
+        '201':
+          description: Tender created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
+
+    put:
+      tags:
+        - Book Tender API Standards
+      summary: Update a tender
+      operationId: updateTender
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/schemas.yaml#/components/schemas/TenderUpdateRequest'
+      responses:
+        '200':
+          description: Tender updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
+
+    delete:
+      tags:
+        - Book Tender API Standards
+      summary: Cancel a tender
+      operationId: cancelTender
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/schemas.yaml#/components/schemas/TenderCancelRequest'
+      responses:
+        '200':
+          description: Tender cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
