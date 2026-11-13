@@ -78,14 +78,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/Invoice'
+              $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Invoice'
       responses:
         '200':
           description: Invoice created successfully.
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SuccessMessage'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -133,7 +133,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: './schemas/schemas.yaml#/components/schemas/Invoice'
+                  $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Invoice'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -161,7 +161,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/Invoice'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Invoice'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -190,13 +190,13 @@ paths:
           schema:
             type: array
             items:
-              $ref: './schemas/schemas.yaml#/components/schemas/Comment'
+              $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Comment'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/Invoice'
+              $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Invoice'
 
       responses:
         '200':
@@ -204,7 +204,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SuccessMessage'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -230,14 +230,14 @@ paths:
           required: false
           description: Optional comments related to the invoice deletion.
           schema:
-            $ref: './schemas/schemas.yaml#/components/schemas/Comment'
+            $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Comment'
       responses:
         '204':
           description: Invoice deleted successfully. No content returned.
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SuccessMessage'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -293,7 +293,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/DocumentRequest'
+              $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/DocumentRequest'
 
       responses:
         '201':
@@ -301,7 +301,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SuccessMessage'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -335,7 +335,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: './schemas/schemas.yaml#/components/schemas/DocumentType'
+              $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/DocumentType'
             description: One or more document types to be retrieved (e.g., Invoice, BOL).
       responses:
         '200':
@@ -345,7 +345,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: './schemas/schemas.yaml#/components/schemas/DocumentResponse'
+                  $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/DocumentResponse'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -372,7 +372,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/DocumentResponse'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/DocumentResponse'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -407,14 +407,14 @@ paths:
           required: false
           description: Optional comments related to the document deletion.
           schema:
-            $ref: './schemas/schemas.yaml#/components/schemas/Comment'
+            $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/Comment'
       responses:
         '204':
           description: Document(s) or file(s) deleted successfully. No content returned.
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SuccessMessage'
+                $ref: './schemas/ftl-invoice-and-documents.schemas.yaml#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':

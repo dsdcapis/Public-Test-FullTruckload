@@ -83,7 +83,7 @@ paths:
           schema:
             type: array
             items: 
-              $ref: './schemas/schemas.yaml#/components/schemas/EventType'
+              $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/EventType'
           description: One or more event types.
         - in: query
           name: occurredFrom
@@ -127,9 +127,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/EventsPage'
+                $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/EventsPage'
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
   /v1/subscriptions:
     get:
@@ -169,9 +169,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionsPage'
+                $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/SubscriptionsPage'
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
     post:
       tags: 
@@ -187,19 +187,19 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionCreate'
+              $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/SubscriptionCreate'
       responses:
         '201':
           description: Created
           headers:
             Location:
-              $ref: './schemas/schemas.yaml#/components/headers/Location'
+              $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/headers/Location'
           content:
             application/json:
               schema: 
-                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+                $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/Subscription'
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
   /v1/subscriptions/{subscriptionId}:
     get:
@@ -222,9 +222,9 @@ paths:
           content:
             application/json:
               schema: 
-                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+                $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/Subscription'
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
     patch:
       tags: 
@@ -243,16 +243,16 @@ paths:
         content:
           application/merge-patch+json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/SubscriptionPatch'
+              $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/SubscriptionPatch'
       responses:
         '200':
           description: Updated subscription
           content:
             application/json:
               schema: 
-                $ref: './schemas/schemas.yaml#/components/schemas/Subscription'
+                $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/Subscription'
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
     delete:
       tags: 
@@ -270,7 +270,7 @@ paths:
         '204':
           description: Deleted
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'
 
 webhooks:
   shipmentEvents:
@@ -283,11 +283,11 @@ webhooks:
         content:
           application/json:
             schema: 
-              $ref: './schemas/schemas.yaml#/components/schemas/EventBatch'
+              $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/schemas/EventBatch'
       responses:
         '200': 
           description: Acknowledged (no retry)
         '202': 
           description: Accepted (no retry)
         'default': 
-          $ref: './schemas/schemas.yaml#/components/responses/UnexpectedError'
+          $ref: './schemas/ftl-in-transit-visibility.schemas.yaml#/components/responses/UnexpectedError'

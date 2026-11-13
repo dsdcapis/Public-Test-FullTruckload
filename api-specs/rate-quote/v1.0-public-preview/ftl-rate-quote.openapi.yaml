@@ -50,14 +50,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/RateQuoteRequest'
+              $ref: './schemas/ftl-rate-quote.schemas.yaml#/components/schemas/RateQuoteRequest'
       responses:
         '200':
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/RateQuoteResponse'
+                $ref: './schemas/ftl-rate-quote.schemas.yaml#/components/schemas/RateQuoteResponse'
 
   /v1/ratequote/app/{quoteId}:
     get:
@@ -77,4 +77,4 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/RateQuoteResponse'
+                $ref: './schemas/ftl-rate-quote.schemas.yaml#/components/schemas/RateQuoteResponse'

@@ -230,7 +230,7 @@ paths:
                 items:
                   oneOf:
                     - $ref: './schemas/external-specs/ltl-ebol-2.1.0-openapi.yaml#/components/schemas/Result_Status_Codes'
-                    - $ref: './schemas/ftl.yaml#/components/schemas/Result_Status_Codes'
+                    - $ref: './schemas/ftl-ebol.schemas.yaml#/components/schemas/Result_Status_Codes'
 components:
   schemas:
     FTL_BOL_Request:
@@ -254,17 +254,17 @@ components:
                         - Create
                         - Update
                         - Delete
-                - $ref: './schemas/ftl.yaml#/components/schemas/BOL_Header'
+                - $ref: './schemas/ftl-ebol.schemas.yaml#/components/schemas/BOL_Header'
             version:
               $ref: '#/components/schemas/FTL_Version'
-        - $ref: './schemas/ftl.yaml#/components/schemas/BOL_Request'
+        - $ref: './schemas/ftl-ebol.schemas.yaml#/components/schemas/BOL_Request'
     FTL_BOL_Response:
       allOf:
         - type: object
           properties:
             version:
               $ref: '#/components/schemas/FTL_Version'
-        - $ref: './schemas/ftl.yaml#/components/schemas/BOL_Response'
+        - $ref: './schemas/ftl-ebol.schemas.yaml#/components/schemas/BOL_Response'
     FTL_Version:
       title: Version
       type: string
