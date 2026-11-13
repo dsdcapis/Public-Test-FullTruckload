@@ -58,14 +58,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/TenderCreateRequest'
+              $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderCreateRequest'
       responses:
         '201':
           description: Tender created successfully
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
+                $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderActionResponse'
 
     put:
       tags:
@@ -77,14 +77,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/TenderUpdateRequest'
+              $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderUpdateRequest'
       responses:
         '200':
           description: Tender updated successfully
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
+                $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderActionResponse'
 
     delete:
       tags:
@@ -96,11 +96,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './schemas/schemas.yaml#/components/schemas/TenderCancelRequest'
+              $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderCancelRequest'
       responses:
         '200':
           description: Tender cancelled successfully
           content:
             application/json:
               schema:
-                $ref: './schemas/schemas.yaml#/components/schemas/TenderActionResponse'
+                $ref: './schemas/ftl-book-tender.schemas.yaml#/components/schemas/TenderActionResponse'

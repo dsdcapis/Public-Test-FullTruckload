@@ -6,11 +6,22 @@ publicFolder="$currentFolder/public"
 
 findAllFiles() {
     local -n resultRef=$1
+    local -n specFileRef=$2
 
-    while IFS= read -r -d '' dir; do
-        rel_dir="${dir#$currentFolder/}"
+    # Each API version folder holds exactly one spec, named <name>.openapi.yaml
+    # (e.g. ftl-ebol.openapi.yaml). Referenced files such as schemas/*.schemas.yaml or
+    # schemas/external-specs/*-openapi.yaml do not match this pattern.
+    while IFS= read -r -d '' file; do
+        rel_file="${file#$currentFolder/}"
+        rel_dir="$(dirname "$rel_file")"
+        if [[ -n "${specFileRef[$rel_dir]:-}" ]]; then
+            # exit (not return): this loop runs in the current shell via process substitution.
+            echo "ERROR: multiple *.openapi.yaml files in \"$rel_dir\": \"${specFileRef[$rel_dir]}\" and \"$rel_file\". Each API version folder must contain exactly one spec file." >&2
+            exit 1
+        fi
         resultRef["$rel_dir"]="openapi"
-    done < <(find "$currentFolder" -type f -name "openapi.yaml" -print0 | xargs -0 -n1 dirname -z | sort -zu)
+        specFileRef["$rel_dir"]="$rel_file"
+    done < <(find "$currentFolder" -type f -name "*.openapi.yaml" -not -path "$currentFolder/public/*" -print0 | sort -z)
 
     while IFS= read -r -d '' file; do
         rel_file="${file#$currentFolder/}"
@@ -23,13 +34,15 @@ findAllFiles() {
     done < <(find "$currentFolder" -type f -name "*.xlsx" -print0 | sort -z)
 }
 
-# Every spec source file is named openapi.yaml, so derive a unique, readable download
-# name from its folder instead (e.g. api-specs/book-tender/v1.0-public-preview ->
-# ftl-book-tender-v1.0-public-preview.yaml). This name is what gets reported to
-# HubSpot in the dsdc_apis_downloaded field, so it must identify the standard.
+# Download name for a bundled spec: the spec's own name plus its version folder, e.g.
+# api-specs/ebol/v1.0-public-preview/ftl-ebol.openapi.yaml -> ftl-ebol-v1.0-public-preview.openapi.yaml
+# This name is what gets reported to HubSpot in the dsdc_apis_downloaded field,
+# so it must identify both the standard and its version.
 combinedFileName() {
-    local folder="${1#api-specs/}"
-    printf 'ftl-%s.yaml' "${folder//\//-}"
+    local specFile="$1"
+    local specName; specName="$(basename "$specFile" .openapi.yaml)"
+    local version; version="$(basename "$(dirname "$specFile")")"
+    printf '%s-%s.openapi.yaml' "$specName" "$version"
 }
 
 # Escape a value for safe use in HTML text and attribute values.
@@ -45,17 +58,18 @@ htmlEscape() {
 
 loadStaticHtmlToFolder() {
     local folder="$1"
+    local specFile="$2"
     local combinedFile
-    combinedFile="$(combinedFileName "$folder")"
+    combinedFile="$(combinedFileName "$specFile")"
 
     echo "Creating folder \"$publicFolder/$folder\""
     mkdir -p "$publicFolder/$folder"
 
-    echo "Bundling OpenAPI spec: \"$currentFolder/$folder/openapi.yaml\" -> \"$combinedFile\""
-    npx @redocly/cli@1 bundle "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/$combinedFile" --ext yaml
+    echo "Bundling OpenAPI spec: \"$currentFolder/$specFile\" -> \"$combinedFile\""
+    npx @redocly/cli@1 bundle "$currentFolder/$specFile" -o "$publicFolder/$folder/$combinedFile" --ext yaml
 
-    echo "Building docs: \"$currentFolder/$folder/openapi.yaml\""
-    npx @redocly/cli@1 build-docs "$currentFolder/$folder/openapi.yaml" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="$combinedFile" --theme.openapi.hideDownloadButtons=true
+    echo "Building docs: \"$currentFolder/$specFile\""
+    npx @redocly/cli@1 build-docs "$currentFolder/$specFile" -o "$publicFolder/$folder/index.html" --theme.openapi.downloadDefinitionUrl="$combinedFile" --theme.openapi.hideDownloadButtons=true
 
     echo "Adding back-to-downloads button: \"$publicFolder/$folder/index.html\""
     IFS='/' read -ra folderParts <<< "$folder"
@@ -544,7 +558,7 @@ ENDHEAD
                     IFS='/' read -ra parts <<< "$item"
                     local fileName; fileName="$(htmlEscape "${parts[-1]}")"
                     local escapedItem; escapedItem="$(htmlEscape "$item")"
-                    local combinedFile; combinedFile="$(htmlEscape "$(combinedFileName "$item")")"
+                    local combinedFile; combinedFile="$(htmlEscape "$(combinedFileName "${specFiles[$item]}")")"
                     echo "${indent}<li><input type=\"checkbox\" class=\"download-checkbox\" aria-label=\"Select $fileName (OpenAPI) for download\" data-file=\"${escapedItem}/${combinedFile}\" data-name=\"${escapedItem}/${combinedFile}\" onchange=\"updateSelection()\"><a class=\"file-link openapi-link\" href=\"$escapedItem/index.html\">$fileName (OpenAPI) &ndash; Preview</a><a class=\"quick-download-link\" href=\"${escapedItem}/${combinedFile}\" aria-label=\"Download ${combinedFile}\" onclick=\"handleDownloadClick(event); return false;\">&#8595; Download</a></li>" >> "$indexFile"
                 fi
 
@@ -797,12 +811,13 @@ mainProcess() {
     rm -rf "$publicFolder"
 
     declare -A allFiles
-    findAllFiles allFiles
+    declare -A specFiles
+    findAllFiles allFiles specFiles
 
     for path in "${!allFiles[@]}"; do
         if [[ "${allFiles[$path]}" == "openapi" ]]; then
             echo "Processing OpenAPI directory: \"$path\""
-            loadStaticHtmlToFolder "$path"
+            loadStaticHtmlToFolder "$path" "${specFiles[$path]}"
         fi
     done
 
