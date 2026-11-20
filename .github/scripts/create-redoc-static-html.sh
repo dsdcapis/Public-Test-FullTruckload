@@ -804,6 +804,15 @@ copyImages() {
     echo "Copying images..."
     mkdir -p "$publicFolder/images"
     cp "$currentFolder/images/DSDC-TruckloadHigh-Res-R.png" "$publicFolder/images/"
+
+    # Specs may embed images with paths relative to the spec file
+    # (e.g. SSC Appointment Scheduling uses ../images/diagrams/*.jpg), so publish
+    # every image under api-specs at the same relative path.
+    while IFS= read -r -d '' file; do
+        local rel_file="${file#$currentFolder/}"
+        mkdir -p "$publicFolder/$(dirname "$rel_file")"
+        cp "$file" "$publicFolder/$rel_file"
+    done < <(find "$currentFolder/api-specs" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" -o -iname "*.svg" \) -print0)
 }
 
 mainProcess() {
